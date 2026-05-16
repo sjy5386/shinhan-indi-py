@@ -1,6 +1,8 @@
 .env
 portfolio_*.json
 portfolio_*.log
+ag_probe_*.json
+ag_probe_*.log
 .venv/
 venv/
 __pycache__/
