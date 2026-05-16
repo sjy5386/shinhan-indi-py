@@ -31,6 +31,8 @@ from indi_portfolio import (  # noqa: E402
     fetch_positions,
     fetch_account_summary,
     fetch_total_assets,
+    fetch_total_assets_z622,
+    fetch_customer_num,
     enrich_positions_with_quote,
 )
 
@@ -59,6 +61,10 @@ def main(argv: list[str] | None = None) -> int:
     with IndiSession(creds, use_existing=args.use_existing) as sess:
         print(f"[OK] INDI 로그인 완료 (ProgID={creds.progid})")
 
+        customer_num = fetch_customer_num(sess.tr)
+        print(f"[+] 고객번호: {_mask_customer(customer_num)}")
+        today_yyyymmdd = datetime.now(KST).strftime("%Y%m%d")
+
         accounts = fetch_account_list(sess.tr)
         print(f"[+] 등록된 계좌: {len(accounts)}개")
         for a in accounts:
@@ -83,11 +89,15 @@ def main(argv: list[str] | None = None) -> int:
                     enrich_positions_with_quote(sess.tr, positions)
                 summary = fetch_account_summary(sess.tr, no, account_pw)
                 totals = fetch_total_assets(sess.tr, no, account_pw)
+                totals_z622 = fetch_total_assets_z622(
+                    sess.tr, customer_num, no, today_yyyymmdd,
+                )
                 portfolios.append({
                     "account_no_masked": _mask_account(no),
                     "account_name": acc["account_name"],
                     "summary": summary,
                     "totals": totals,
+                    "totals_z622": totals_z622,
                     "positions": positions,
                 })
             except Exception as e:
@@ -118,6 +128,12 @@ def _mask_account(s: str) -> str:
     if len(s) < 5:
         return "***"
     return s[:3] + "*" * (len(s) - 6) + s[-3:]
+
+
+def _mask_customer(s: str) -> str:
+    if len(s) < 4:
+        return "***"
+    return s[:2] + "*" * (len(s) - 4) + s[-2:]
 
 
 if __name__ == "__main__":
