@@ -1,7 +1,7 @@
-# INDI 포트폴리오 → AI 분석 파이프라인 (v0)
+# shinhan-indi-py
 
-신한투자증권 INDI OCX를 PyQt5로 호출해 **국내 현물** 포트폴리오 스냅샷을 JSON으로
-덤프합니다. 그 JSON을 Claude(또는 다른 AI)에게 던지면 분석 받음.
+신한투자증권 INDI OCX를 Python에서 호출하는 비공식 도구. v0은 **국내 현물** 잔고
+스냅샷을 JSON으로 덤프해 AI 분석에 넘기는 단발성 파이프라인.
 
 ## 환경
 
