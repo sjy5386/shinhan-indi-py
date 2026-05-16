@@ -32,12 +32,26 @@ from indi_portfolio import (  # noqa: E402
     fetch_account_summary,
     fetch_total_assets,
     fetch_total_assets_z622,
+    fetch_saaa612qb_holdings,
     fetch_customer_num,
     enrich_positions_with_quote,
 )
 
 
 KST = timezone(timedelta(hours=9))
+
+
+class _Tee:
+    """stdout/stderr를 콘솔 + 파일에 동시 출력."""
+    def __init__(self, *streams):
+        self.streams = streams
+    def write(self, s):
+        for st in self.streams:
+            st.write(s)
+            st.flush()
+    def flush(self):
+        for st in self.streams:
+            st.flush()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -55,15 +69,31 @@ def main(argv: list[str] | None = None) -> int:
     if not args.dry_run and not account_pw:
         sys.exit(".env 누락: INDI_ACCOUNT_PW (계좌 비밀번호)")
 
+    # 출력 파일명 미리 결정 → 같은 prefix로 .log 자동 생성
+    out = args.out
+    if not out:
+        ts = datetime.now(KST).strftime("%Y%m%d_%H%M")
+        out = f"portfolio_{ts}.json"
+    log_path = out.removesuffix(".json") + ".log"
+    log_f = open(log_path, "w", encoding="utf-8")
+    sys.stdout = _Tee(sys.__stdout__, log_f)
+    sys.stderr = _Tee(sys.__stderr__, log_f)
+
     cert_mode = "인증서 모드" if creds.cert_pw else "시세조회 모드 (인증서 없음)"
     print(f"[INFO] {cert_mode}")
+    print(f"[INFO] log: {log_path}")
 
     with IndiSession(creds, use_existing=args.use_existing) as sess:
         print(f"[OK] INDI 로그인 완료 (ProgID={creds.progid})")
 
         customer_num = fetch_customer_num(sess.tr)
         print(f"[+] 고객번호: {_mask_customer(customer_num)}")
-        today_yyyymmdd = datetime.now(KST).strftime("%Y%m%d")
+        _now = datetime.now(KST)
+        today_yyyymmdd = _now.strftime("%Y%m%d")
+        # SAAA612QB는 영업일 기준 — 주말 보정 (공휴일 X, 검증용)
+        _delta = 3 if _now.weekday() == 0 else 2 if _now.weekday() == 6 else 1
+        prev_bday_yyyymmdd = (_now - timedelta(days=_delta)).strftime("%Y%m%d")
+        print(f"[+] today={today_yyyymmdd}, prev_bday={prev_bday_yyyymmdd}")
 
         accounts = fetch_account_list(sess.tr)
         print(f"[+] 등록된 계좌: {len(accounts)}개")
@@ -92,12 +122,21 @@ def main(argv: list[str] | None = None) -> int:
                 totals_z622 = fetch_total_assets_z622(
                     sess.tr, customer_num, no, today_yyyymmdd,
                 )
+                try:
+                    saaa612qb = fetch_saaa612qb_holdings(
+                        sess.tr, no, prev_bday_yyyymmdd, account_pw,
+                    )
+                    print(f"    saaa612qb rows: {len(saaa612qb)}")
+                except (TimeoutError, RuntimeError) as e:
+                    print(f"    [WARN] SAAA612QB: {e}")
+                    saaa612qb = None
                 portfolios.append({
                     "account_no_masked": _mask_account(no),
                     "account_name": acc["account_name"],
                     "summary": summary,
                     "totals": totals,
                     "totals_z622": totals_z622,
+                    "saaa612qb": saaa612qb,
                     "positions": positions,
                 })
             except Exception as e:
@@ -114,10 +153,6 @@ def main(argv: list[str] | None = None) -> int:
         "accounts": portfolios,
     }
 
-    out = args.out
-    if not out:
-        ts = datetime.now(KST).strftime("%Y%m%d_%H%M")
-        out = f"portfolio_{ts}.json"
     with open(out, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, ensure_ascii=False, indent=2)
     print(f"\n[DONE] {out}")

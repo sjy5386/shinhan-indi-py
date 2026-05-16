@@ -231,6 +231,53 @@ def fetch_total_assets_z622(
     }
 
 
+def fetch_saaa612qb_holdings(
+    ocx: QAxWidget, account_no: str, date_yyyymmdd: str, account_pw: str,
+) -> list[dict]:
+    """SAAA612QB — 특정일잔고확인서. 종목별 잔량/평가금액 Multi.
+
+    해외주식 종목별 분해 검증용 (v0.6).
+    사양: Special_Interface.md L12586-12628.
+    """
+    res = call_tr(
+        ocx, "SAAA612QB",
+        single_inputs=[
+            (0, account_no),
+            (1, ""),              # 계좌상품코드_in (공란=전체 — SABZ622Q2와 동일 패턴)
+            (2, date_yyyymmdd),   # 처리일자
+            (3, "1"),             # 한글영문구분코드 (1=한글)
+            (4, ""),              # 채권수량표기구분코드 (NULL)
+            (5, account_pw),
+        ],
+        output_multi_cols=list(range(15)),
+    )
+    holdings = []
+    for r in res.multi:
+        symbol = (r.get(0, "") or "").strip()
+        name = (r.get(1, "") or "").strip()
+        qty = _to_float(r.get(3, "0"))
+        if not symbol and not name and qty == 0:
+            continue
+        holdings.append({
+            "symbol": symbol,
+            "name": name,
+            "product_name": (r.get(2, "") or "").strip(),
+            "qty": qty,
+            "close_amount": _to_float(r.get(4, "0")),
+            "eval_amount": _to_float(r.get(5, "0")),
+            "credit_loan_date": (r.get(6, "") or "").strip(),
+            "maturity_date": (r.get(7, "") or "").strip(),
+            "fund_seq": (r.get(8, "") or "").strip(),
+            "product_code_out": (r.get(9, "") or "").strip(),
+            "account_service_div": (r.get(10, "") or "").strip(),
+            "parent_product_code": (r.get(11, "") or "").strip(),
+            "buy_date": (r.get(12, "") or "").strip(),
+            "buy_price": _to_float(r.get(13, "0")),
+            "avg_buy_amount": _to_float(r.get(14, "0")),
+        })
+    return holdings
+
+
 def enrich_positions_with_quote(ocx: QAxWidget, positions: list[dict]) -> None:
     """SC TR로 시가/고가/저가/전일대비 추가 (선택)."""
     for p in positions:

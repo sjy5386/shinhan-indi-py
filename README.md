@@ -101,7 +101,7 @@ python dump_portfolio.py --no-quote
 | `Special_Interface.md` | Special_Interface.doc 전체 사양서 (TR/이벤트/메소드 상세) |
 | `indi_session.py` | OCX 인스턴스 + 로그인/로그아웃 |
 | `indi_tr.py` | RequestData→ReceiveData를 동기 함수로 감싼 헬퍼 |
-| `indi_portfolio.py` | SABA200QB / SABA610Q1 / SABA655Q1 / SABZ622Q2 / CustomerNum / SC 호출 함수 |
+| `indi_portfolio.py` | SABA200QB / SABA610Q1 / SABA655Q1 / SABZ622Q2 / SAAA612QB / CustomerNum / SC 호출 함수 |
 | `dump_portfolio.py` | entry point (CLI) |
 | `register_ocx.bat` | 64bit OCX regsvr32 등록 도우미 |
 
@@ -111,8 +111,17 @@ python dump_portfolio.py --no-quote
   해외주식이 별도 필드로 분해됨. `CustomerNum` TR로 받은 10자 고객번호가 INPUT에
   필요. 사양서가 OUTPUT을 `[Single]`로 표기했지만 실측은 Multi — 함정 주의
   (notes.md 참조).
-- **해외주식 종목별은 여전히 미해결.** SABZ622Q2의 "해외주식평가금액"도 합계.
-  종목별은 `AG` 실시간 메시지 등록/해제 패턴이 필요 (v0.6 후보).
+- **v0.6 해외주식 종목별 분해 — 시세조회 모드 불가 (인증서 발급 대기):**
+  `SAAA612QB`(특정일잔고확인서) 단발 TR로 종목별 잔량/평가금액 Multi 호출 추가.
+  JSON의 각 계좌에 `saaa612qb` 키로 dump. **시세조회 모드 실측에서 8계좌 모두
+  rows=0** (TR 응답 정상, 빈 데이터). 권한 차등 추정. 인증서 발급 후
+  `.env`에 `INDI_CERT_PW` 채우고 재실행하면 즉시 결판. 코드는 보존됨.
+  (notes.md SAAA612QB 섹션 참조)
+- **로그 자동 저장:** `dump_portfolio.py` 실행 시 `portfolio_*.json` 옆에
+  같은 prefix의 `.log` 자동 생성 (stdout/stderr Tee). 디버그/AI 분석에 활용.
+- **v0.7 후보 — AG 실시간 잔고:** 인증서 모드에서도 SAAA612QB가 해외 미지원으로
+  판명 시 `AG` 실시간 메시지 등록/해제 패턴으로 전환. 단, Special_Interface.md
+  변경이력 L115에만 등재되고 본 사양 누락 → 필드 역공학 필요.
 - **장중 호출 권장.** 잔고 자체는 장후에도 가능하지만 `SC`(현재가)는 장중·종가 모두
   가능. 장 마감 직후가 가장 의미 있는 시점.
 - **TR 호출 빈도 제한**이 INDI에 있으므로 종목 수 많으면 throttle 추가 필요.

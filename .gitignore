@@ -1,5 +1,6 @@
 .env
 portfolio_*.json
+portfolio_*.log
 .venv/
 venv/
 __pycache__/
