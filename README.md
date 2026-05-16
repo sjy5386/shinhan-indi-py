@@ -111,17 +111,16 @@ python dump_portfolio.py --no-quote
   해외주식이 별도 필드로 분해됨. `CustomerNum` TR로 받은 10자 고객번호가 INPUT에
   필요. 사양서가 OUTPUT을 `[Single]`로 표기했지만 실측은 Multi — 함정 주의
   (notes.md 참조).
-- **v0.6 해외주식 종목별 분해 — 시세조회 모드 불가 (인증서 발급 대기):**
-  `SAAA612QB`(특정일잔고확인서) 단발 TR로 종목별 잔량/평가금액 Multi 호출 추가.
-  JSON의 각 계좌에 `saaa612qb` 키로 dump. **시세조회 모드 실측에서 8계좌 모두
-  rows=0** (TR 응답 정상, 빈 데이터). 권한 차등 추정. 인증서 발급 후
-  `.env`에 `INDI_CERT_PW` 채우고 재실행하면 즉시 결판. 코드는 보존됨.
-  (notes.md SAAA612QB 섹션 참조)
+- **v0.6 SAAA612QB 폐기 (시세조회 + 인증서 모드 모두 0행 확인):**
+  `SAAA612QB`(특정일잔고확인서) 단발 TR이 두 모드 모두 8계좌 전수 빈 응답.
+  사양서 supply-side 발굴 결과 해외주식 종목별 단발 TR 부재 확정.
+  SOL HTS 2700("해외주식 잔고")은 신한 신형 API라 INDI(구형 OCX) 미지원.
+  코드는 비활성으로 보존 (notes.md SAAA612QB 섹션 참조).
 - **로그 자동 저장:** `dump_portfolio.py` 실행 시 `portfolio_*.json` 옆에
   같은 prefix의 `.log` 자동 생성 (stdout/stderr Tee). 디버그/AI 분석에 활용.
-- **v0.7 후보 — AG 실시간 잔고:** 인증서 모드에서도 SAAA612QB가 해외 미지원으로
-  판명 시 `AG` 실시간 메시지 등록/해제 패턴으로 전환. 단, Special_Interface.md
-  변경이력 L115에만 등재되고 본 사양 누락 → 필드 역공학 필요.
+- **v0.7 진입 — AG 실시간 잔고:** 사양서 변경이력 L115에 "AG(해외주식 실시간
+  잔고)" 등재됐지만 본 사양 누락 → ReceiveRTData 이벤트 dump로 필드 역공학.
+  별도 OCX 인스턴스 + 이벤트 dispatcher 인프라 필요.
 - **장중 호출 권장.** 잔고 자체는 장후에도 가능하지만 `SC`(현재가)는 장중·종가 모두
   가능. 장 마감 직후가 가장 의미 있는 시점.
 - **TR 호출 빈도 제한**이 INDI에 있으므로 종목 수 많으면 throttle 추가 필요.
