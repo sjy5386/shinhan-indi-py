@@ -1,0 +1,9 @@
+.env
+portfolio_*.json
+.venv/
+venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+ocx64/
