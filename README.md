@@ -98,6 +98,7 @@ python dump_portfolio.py --no-quote
 | 파일 | 역할 |
 |------|------|
 | `notes.md` | TR 사양서 발췌 (필드 인덱스 정리) |
+| `Special_Interface.md` | Special_Interface.doc 전체 사양서 (TR/이벤트/메소드 상세) |
 | `indi_session.py` | OCX 인스턴스 + 로그인/로그아웃 |
 | `indi_tr.py` | RequestData→ReceiveData를 동기 함수로 감싼 헬퍼 |
 | `indi_portfolio.py` | SABA200QB / SABA610Q1 / SABA655Q1 / SC 호출 함수 |
